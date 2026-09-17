@@ -2,7 +2,7 @@
 
 ## ADR001 — React shell, pure domain model
 
-**Context:** A precise caption editor needs valid transitions, readable tests and a polished interface. **Alternatives:** embed rules in component callbacks; introduce a global state library; build custom elements without a framework. **Decision:** React 19 and TypeScript with pure caption/codec/history modules. Components own form drafts and presentation; the domain validates the complete committed document. **Consequences:** tests exercise rules without a browser and UI cannot commit a partially valid track. Some orchestration remains in the studio component; extracting an external store would add indirection without shared consumers. **Revisit:** multiple editing surfaces, very large documents or reuse of the engine outside this app.
+**Context:** A precise caption editor needs valid transitions, readable tests and a polished interface. **Alternatives:** embed rules in component callbacks; introduce a global state library; build custom elements without a framework. **Decision:** React 19 and TypeScript with pure caption/codec/history modules. The studio owns per-cue drafts while components own presentation; the domain validates the complete committed document. **Consequences:** tests exercise rules without a browser and UI cannot commit a partially valid track. Some orchestration remains in the studio component; extracting an external store would add indirection without shared consumers. **Revisit:** multiple editing surfaces, very large documents or reuse of the engine outside this app.
 
 ## ADR002 — Native media time, decoded waveform
 
@@ -23,3 +23,11 @@
 ## ADR006 — Simple linear UI within an honest scale envelope
 
 **Context:** Complexity should pay for a real requirement. **Alternatives:** virtual list, indexed interval tree, worker-based rendering and incremental history immediately. **Decision:** cap at 100 cues, use sorted validation and linear active selection; aggregate to 180 waveform bars. **Consequences:** the model stays easy to audit and test. No invented throughput claims; current bounds explicitly reject overload. **Revisit:** profiles at 1,000+ cues, multi-minute files or real mobile-device evidence showing main-thread bottlenecks. The staged migration is described in SCALABILITY.md.
+
+## ADR007 — Preserve drafts separately from the saved track
+
+**Context:** Real editing exposed two losses: switching cues discarded unfinished text, and an older file read could replace text typed after import began. **Alternatives:** auto-save every keystroke; modal confirmation on each selection; or bounded per-cue session drafts. **Decision:** keep a Map keyed by existing cue ID, mark dirty cues, expose Save/Discard, and advance the async revision fence on draft changes. Whole-track replacement/history waits until drafts are resolved; export and optional storage include saved captions only. **Consequences:** browsing is safe without implicit commits or confirmation dialogs; drafts are deliberately not a reload backup. At most 100 drafts each hold 500 text code units and two 12-character time fields. **Revisit:** durable recovery or multi-document editing, which needs a versioned draft persistence contract.
+
+## ADR008 — Precise timing actions and reachable mobile inspection
+
+**Context:** Typing timestamps from a distant playback readout and manually finding the inspector on a phone add avoidable friction. **Alternatives:** drag handles with new gesture semantics; automatic timing commits; or native-clock field actions plus focus navigation. **Decision:** Set start/end reads actual audio currentTime into the draft, then uses the existing Save validation. Mobile selection focuses the inspector with a return path; desktop context remains stationary. **Consequences:** invalid timing stays recoverable and no new clock or gesture engine is introduced. **Revisit:** measured demand for waveform drag editing or continuous cue audition.

@@ -25,6 +25,7 @@ import { AUDIO_URL, useMedia, type MediaController } from "./hooks/useMedia";
 import { Transport } from "./components/Transport";
 import { CueEditor } from "./components/CueEditor";
 import { CaptionList } from "./components/CaptionList";
+import { draftFor, matchesCue, type CueDraft } from "./domain/drafts";
 
 function readInitial(durationMs: number) {
   const sample = sampleDocument(durationMs);
@@ -67,12 +68,41 @@ function Studio({
   const [notice, setNotice] = useState(initial.message);
   const [error, setError] = useState("");
   const [importing, setImporting] = useState(false);
+  const [drafts, setDrafts] = useState<Map<string, CueDraft>>(() => new Map());
+  const [inspectRequest, setInspectRequest] = useState(0);
+  const editorHeading = useRef<HTMLHeadingElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const revision = useRef(0);
   const importRequest = useRef(0);
   const document = history.present;
   const selected = document.cues.find((cue) => cue.id === selectedId);
   const active = activeCue(document, media.timeMs);
+  const draftCount = drafts.size;
+
+  useEffect(() => {
+    if (!inspectRequest || !window.matchMedia("(max-width: 700px)").matches)
+      return;
+    editorHeading.current?.focus({ preventScroll: true });
+    editorHeading.current?.scrollIntoView({
+      block: "start",
+      behavior: "instant",
+    });
+  }, [inspectRequest]);
+
+  const selectCue = (id: string) => {
+    setSelectedId(id);
+    setInspectRequest((value) => value + 1);
+  };
+  const discardDraft = (id: string) => {
+    revision.current += 1;
+    setDrafts((current) => {
+      const next = new Map(current);
+      next.delete(id);
+      return next;
+    });
+    setError("");
+    setNotice("Draft discarded. Saved caption restored.");
+  };
 
   useEffect(() => {
     if (!remember) return;
@@ -102,6 +132,7 @@ function Studio({
     setError("");
   };
   const moveHistory = (direction: "undo" | "redo") => {
+    if (draftCount) return;
     revision.current += 1;
     const next = historyReducer(history, { type: direction });
     dispatch({ type: direction });
@@ -116,6 +147,10 @@ function Studio({
     );
   };
   const doImport = async (file: File) => {
+    if (draftCount) {
+      setError("Save or discard your caption drafts before importing a track.");
+      return;
+    }
     const request = ++importRequest.current;
     const startRevision = revision.current;
     setError("");
@@ -154,7 +189,11 @@ function Studio({
     anchor.download = "small-hours.vtt";
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setNotice("WebVTT exported. Your audio file is unchanged.");
+    setNotice(
+      draftCount
+        ? "Saved captions exported. Unsaved drafts are not included."
+        : "WebVTT exported. Your audio file is unchanged.",
+    );
   };
   return (
     <>
@@ -178,7 +217,7 @@ function Studio({
           />
           <button
             className="secondary"
-            disabled={importing}
+            disabled={importing || draftCount > 0}
             onClick={() => fileRef.current?.click()}
           >
             <ArrowUpFromLine size={16} />{" "}
@@ -193,17 +232,18 @@ function Studio({
         media={media}
         document={document}
         selectedId={selectedId}
-        onSelect={setSelectedId}
+        onSelect={selectCue}
       />
       <div className="edit-toolbar">
         <p>
-          <strong>Your track, your timing.</strong> Every change is reversible.
+          <strong>Your track, your timing.</strong> Saved changes are
+          reversible.
         </p>
         <div>
           <button
             className="icon-button"
             aria-label="Undo"
-            disabled={!history.past.length}
+            disabled={!history.past.length || draftCount > 0}
             onClick={() => moveHistory("undo")}
           >
             <Undo2 size={18} />
@@ -211,13 +251,22 @@ function Studio({
           <button
             className="icon-button"
             aria-label="Redo"
-            disabled={!history.future.length}
+            disabled={!history.future.length || draftCount > 0}
             onClick={() => moveHistory("redo")}
           >
             <Redo2 size={18} />
           </button>
         </div>
       </div>
+      {draftCount > 0 && (
+        <p className="draft-summary" aria-live="polite">
+          <strong>
+            {draftCount} unsaved {draftCount === 1 ? "draft" : "drafts"}.
+          </strong>{" "}
+          Save or discard before import, undo or reset. Export includes saved
+          captions only.
+        </p>
+      )}
       {error && (
         <p className="inline-error global-message" role="alert">
           {error}
@@ -233,11 +282,13 @@ function Studio({
           document={document}
           selectedId={selectedId}
           activeId={active?.id}
-          onSelect={setSelectedId}
+          onSelect={selectCue}
+          draftIds={new Set(drafts.keys())}
           onAdd={() => {
             try {
               const id = `cue-${crypto.randomUUID()}`;
               commit(addCue(document, id), id);
+              setInspectRequest((value) => value + 1);
               setNotice("A new caption was added in the first available gap.");
             } catch (cause) {
               setError(
@@ -255,7 +306,42 @@ function Studio({
             index={document.cues.indexOf(selected)}
             onSave={(cue) => {
               commit(updateCue(document, cue));
+              discardDraft(cue.id);
               setNotice("Caption saved.");
+            }}
+            draft={drafts.get(selected.id) ?? draftFor(selected)}
+            dirty={drafts.has(selected.id)}
+            onChange={(draft) => {
+              // A newer form edit owns the session even before it becomes a document commit.
+              revision.current += 1;
+              setError("");
+              setNotice("");
+              setDrafts((current) => {
+                const next = new Map(current);
+                if (matchesCue(draft, selected)) next.delete(selected.id);
+                else next.set(selected.id, draft);
+                return next;
+              });
+            }}
+            onDiscard={() => discardDraft(selected.id)}
+            timeMs={media.timeMs}
+            readPlayhead={() =>
+              Math.max(
+                0,
+                Math.min(
+                  durationMs,
+                  Math.round((media.audioRef.current?.currentTime ?? 0) * 1000),
+                ),
+              )
+            }
+            canUsePlayhead={!media.error}
+            headingRef={editorHeading}
+            onBack={() => {
+              const heading = window.document.getElementById(
+                "caption-track-heading",
+              );
+              heading?.focus({ preventScroll: true });
+              heading?.scrollIntoView({ block: "start", behavior: "instant" });
             }}
             onDelete={(id) => {
               commit({
@@ -298,6 +384,7 @@ function Studio({
         </label>
         <button
           className="text-button"
+          disabled={draftCount > 0}
           onClick={() => {
             commit(sampleDocument(durationMs), "intro");
             setNotice("Original sample captions restored. You can undo this.");

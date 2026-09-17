@@ -6,6 +6,7 @@ interface Props {
   activeId?: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
+  draftIds: ReadonlySet<string>;
 }
 export function CaptionList({
   document,
@@ -13,13 +14,16 @@ export function CaptionList({
   activeId,
   onSelect,
   onAdd,
+  draftIds,
 }: Props) {
   return (
     <section className="caption-list panel" aria-label="Captions">
       <div className="section-line">
         <div>
           <span className="eyebrow">THE CAPTION TRACK</span>
-          <h2>A little more meaning.</h2>
+          <h2 id="caption-track-heading" tabIndex={-1}>
+            A little more meaning.
+          </h2>
         </div>
         <span className="count">
           {document.cues.length.toString().padStart(2, "0")}
@@ -49,6 +53,9 @@ export function CaptionList({
                   {formatTimestamp(cue.endMs).slice(3)}
                 </span>
                 <span className="cue-text">{cue.text}</span>
+                {draftIds.has(cue.id) && (
+                  <span className="draft-tag">Unsaved draft</span>
+                )}
               </span>
               <span
                 className={`cue-indicator ${activeId === cue.id ? "is-active" : ""}`}

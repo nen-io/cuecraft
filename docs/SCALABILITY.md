@@ -2,15 +2,16 @@
 
 ## Implemented limits
 
-| Resource    | Bound                                  | Reason/overload behavior                                                                                                                  |
-| ----------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Cues        | 100                                    | Keeps validation/rendering/selection simple; excess imports rejected and Add disabled                                                     |
-| Cue text    | 500 UTF-16 code units                  | Bounds input/rendering/undo cost; editor caps entry and imports reject excess                                                             |
-| Import      | 512 KiB UTF-8                          | Pre-read file limit plus codec byte check; rejection preserves committed state                                                            |
-| Saved input | 512 KiB UTF-8                          | Bounds parsed persistence, accommodates ordinary max documents and Unicode overhead                                                       |
-| History     | 40 past/future states                  | Fixed memory bound, old edits age out; playback never creates snapshots                                                                   |
-| Audio       | One fixed 24-second 22,050 Hz mono WAV | No arbitrary audio decoding path; 529,200 decoded samples, approximately 2.02 MiB for a mono Float32 sample array before browser overhead |
-| Waveform    | 180 bars                               | Fixed DOM/SVG cost independent of playback ticks                                                                                          |
+| Resource    | Bound                                                                            | Reason/overload behavior                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Cues        | 100                                                                              | Keeps validation/rendering/selection simple; excess imports rejected and Add disabled                                                     |
+| Cue text    | 500 UTF-16 code units                                                            | Bounds input/rendering/undo cost; editor caps entry and imports reject excess                                                             |
+| Import      | 512 KiB UTF-8                                                                    | Pre-read file limit plus codec byte check; rejection preserves committed state                                                            |
+| Saved input | 512 KiB UTF-8                                                                    | Bounds parsed persistence, accommodates ordinary max documents and Unicode overhead                                                       |
+| Drafts      | At most 100, one per existing cue; 500 text code units + two 12-character fields | Session-only, removed on save/discard; cannot grow independently of the cue limit                                                         |
+| History     | 40 past/future states                                                            | Fixed memory bound, old edits age out; playback never creates snapshots                                                                   |
+| Audio       | One fixed 24-second 22,050 Hz mono WAV                                           | No arbitrary audio decoding path; 529,200 decoded samples, approximately 2.02 MiB for a mono Float32 sample array before browser overhead |
+| Waveform    | 180 bars                                                                         | Fixed DOM/SVG cost independent of playback ticks                                                                                          |
 
 The 512 KiB import envelope accommodates every valid 100-caption document: maximum text escaping is five bytes per UTF-16 code unit for a carriage-return reference, so 100 × 500 × 5 plus bounded timestamp/identifier overhead stays below the limit. Maximum escaping and multibyte round-trip tests cover this contract.
 
@@ -31,3 +32,5 @@ For roughly 1,000 cues or multi-minute audio, first profile actual interactions.
 For long recordings and 10,000+ cues, use segmented media, chunked waveform summaries and paged/virtualized caption data. Input size and media duration limits must still fail explicitly. Worker isolation reduces main-thread stalls but is not a security sandbox. A real upload/transcription system would require an authenticated backend, per-user ownership checks, storage quotas, validated media types, malware/decoder-risk handling, cancellation and bounded job queues with idempotent job IDs. None is implemented here.
 
 Collaborative editing changes the consistency model: replace last-writer-wins localStorage with a server revision/CAS protocol or a carefully designed CRDT. Persist cue identities and separate draft edits from committed revisions. Offline edits need conflict handling, not silent last-write overwrite. Caching media must include version/digest and privacy scope; invalidation follows asset replacement and deletion. These are staged redesigns triggered by measured needs, not claims about the current static demo.
+
+Draft Map updates clone at most 100 entries and compare three bounded fields. No draft snapshots enter the 40-state history, and browsing/playback creates no additional draft entries.

@@ -19,6 +19,8 @@ Document v1 contains media duration and sorted cues {id,startMs,endMs,text}. Cue
 5. Export well-formed UTF-8 WebVTT with millisecond timestamps and escaped caption markup. Support importing this project's WebVTT subset with useful errors; reject oversized input >512 KiB and unsupported malformed timestamps. Round-trip text including &, < and > without rendering arbitrary HTML.
 6. Restore edits optionally from validated storage keyed to bundled asset; failures nonfatal. A reset-to-sample action restores original cues.
 7. No speech recognition or rendering claims. All buttons operate; display audio errors instead of fake moving playhead.
+8. Keep one session-only draft per existing cue when switching selection. Mark unsaved cues and offer explicit Save/Discard. Drafts do not affect playback, export or optional persistence. While any draft exists, disable track replacement/history actions; a delayed import must reject if typing began after its read started. Deleting a dirty cue requires saving or discarding first.
+9. Set start/end from the actual audio element's current time as a draft, with normal validation at Save. On the stacked phone layout, caption selection focuses and reveals the editor; Back to captions returns focus to the track.
 
 ## Acceptance tests
 
@@ -28,6 +30,8 @@ Document v1 contains media duration and sorted cues {id,startMs,endMs,text}. Cue
 - C4: VTT round trip non-ASCII and markup characters; corrupted/oversized import preserves existing document.
 - C5 browser: real playback time advances after user gesture, pause stops, seek updates active cue, edit/undo/redo, invalid timing error, download VTT and reimport.
 - C6: keyboard range/transport and phone layout; audio loading/failure paths.
+- C7: draft retention across cues; stale-import protection before Save; exports/storage exclude drafts; explicit discard, blocked track replacement and mobile editor focus.
+- C8: native playhead timing drafts, invalid boundaries preserve saved cues, and undo restores valid timing commits.
 
 ## Documentation
 

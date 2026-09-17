@@ -6,6 +6,77 @@ const storageKey = "cuecraft:small-hours-pcm-v1";
 const vtt = (text: string) =>
   `WEBVTT\n\n1\n00:00:00.000 --> 00:00:03.000\n${text}\n`;
 
+test("unfinished caption drafts survive selection and block stale imports", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByLabel("Caption text", { exact: true })
+    .fill("[Unfinished first caption]");
+  await page
+    .getByRole("button", { name: "Edit caption 2", exact: true })
+    .click();
+  await page
+    .getByLabel("Caption text", { exact: true })
+    .fill("[Unfinished second caption]");
+  await page
+    .getByRole("button", { name: "Edit caption 1", exact: true })
+    .click();
+  await expect(page.getByLabel("Caption text", { exact: true })).toHaveValue(
+    "[Unfinished first caption]",
+  );
+  await expect(
+    page.getByRole("button", { name: "Import VTT", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Save caption", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Edit caption 2", exact: true })
+    .click();
+  await expect(page.getByLabel("Caption text", { exact: true })).toHaveValue(
+    "[Unfinished second caption]",
+  );
+  await page
+    .getByRole("button", { name: "Discard draft", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Import VTT", exact: true }),
+  ).toBeEnabled();
+});
+
+test("a delayed import cannot replace newly typed unsaved text", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    File.prototype.text = function () {
+      return new Promise((resolve) => {
+        (
+          window as unknown as { finishDraftImport: (source: string) => void }
+        ).finishDraftImport = resolve;
+      });
+    };
+  });
+  await page.goto("/");
+  await page.getByLabel("Import WebVTT file").setInputFiles({
+    name: "slow.vtt",
+    mimeType: "text/vtt",
+    buffer: Buffer.from(vtt("Old import")),
+  });
+  await page
+    .getByLabel("Caption text", { exact: true })
+    .fill("[New unsaved words]");
+  await page.evaluate(
+    (source) =>
+      (
+        window as unknown as { finishDraftImport: (source: string) => void }
+      ).finishDraftImport(source),
+    vtt("Old import"),
+  );
+  await expect(page.getByLabel("Caption text", { exact: true })).toHaveValue(
+    "[New unsaved words]",
+  );
+  await expect(page.getByRole("alert")).toContainText("Captions changed");
+});
+
 test("real playback, pause, keyboard seeking, active cue and reset (C5/C6)", async ({
   page,
 }) => {
@@ -82,6 +153,12 @@ test("edits, history, invalid timing, safe content, export and reimport (C5)", a
   await page.getByRole("button", { name: "Export VTT" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toBe("small-hours.vtt");
+  await expect(
+    page.getByRole("button", { name: "Import VTT", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Discard draft", exact: true })
+    .click();
   await page
     .getByLabel("Import WebVTT file")
     .setInputFiles((await download.path())!);
@@ -122,6 +199,111 @@ test("native WebVTT parser decodes exported markup, Unicode and newlines", async
     cuePayload,
   );
   expect(decoded).toBe(text);
+});
+
+test("playhead timing is an explicit validated draft and mobile inspection is reachable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Edit caption 1", exact: true })
+    .click();
+  const heading = page.getByRole("heading", {
+    name: "Make every moment clear.",
+    exact: true,
+  });
+  await expect(heading).toBeFocused();
+  await expect(heading).toBeInViewport();
+  await page.getByRole("slider", { name: "Seek audio" }).fill("800");
+  await page
+    .getByRole("button", { name: "Set start to playhead", exact: true })
+    .click();
+  await page.getByRole("slider", { name: "Seek audio" }).fill("3500");
+  await page
+    .getByRole("button", { name: "Set end to playhead", exact: true })
+    .click();
+  await expect(page.getByLabel("Start time", { exact: true })).toHaveValue(
+    "00:00:00.800",
+  );
+  await expect(page.getByLabel("End time", { exact: true })).toHaveValue(
+    "00:00:03.500",
+  );
+  await expect(
+    page.getByRole("button", { name: "Edit caption 1", exact: true }),
+  ).toContainText("00:03.750");
+  await page.getByRole("button", { name: "Save caption", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Edit caption 1", exact: true }),
+  ).toContainText("00:03.500");
+  await page.getByRole("slider", { name: "Seek audio" }).fill("600");
+  await page
+    .getByRole("button", { name: "Set end to playhead", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Save caption", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("start");
+  await expect(
+    page.getByRole("button", { name: "Undo", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Reset to sample", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Discard draft", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByLabel("End time", { exact: true })).toHaveValue(
+    "00:00:03.500",
+  );
+  await page
+    .getByRole("button", { name: "Back to captions", exact: false })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "A little more meaning.", exact: true }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByLabel("End time", { exact: true })).toHaveValue(
+    "00:00:03.750",
+  );
+});
+
+test("drafts stay out of exports and device storage; import guard protects hidden drafts", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Remember edits on this device").check();
+  await page
+    .getByLabel("Caption text", { exact: true })
+    .fill("Unsaved session only");
+  await page
+    .getByRole("button", { name: "Edit caption 2", exact: true })
+    .click();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export VTT", exact: true }).click();
+  const download = await downloadPromise;
+  const { readFile } = await import("node:fs/promises");
+  expect(await readFile((await download.path())!, "utf8")).not.toContain(
+    "Unsaved session only",
+  );
+  expect(
+    await page.evaluate((key) => localStorage.getItem(key), storageKey),
+  ).not.toContain("Unsaved session only");
+  await page.getByLabel("Import WebVTT file").setInputFiles({
+    name: "replacement.vtt",
+    mimeType: "text/vtt",
+    buffer: Buffer.from(vtt("replacement")),
+  });
+  await expect(page.getByRole("alert")).toContainText("Save or discard");
+  await page
+    .getByRole("button", { name: "Edit caption 1", exact: true })
+    .click();
+  await expect(page.getByLabel("Caption text", { exact: true })).toHaveValue(
+    "Unsaved session only",
+  );
+  await page.getByLabel("Caption text", { exact: true }).fill(firstText);
+  await expect(
+    page.getByRole("button", { name: "Import VTT", exact: true }),
+  ).toBeEnabled();
 });
 
 test("malformed and oversized imports preserve document; empty imports are editable", async ({
@@ -302,6 +484,13 @@ test("desktop, mobile, 320px and 200% text remain usable; actual screenshots", a
   await expect(
     page.getByRole("button", { name: "Save caption" }),
   ).toBeVisible();
+  await page.getByRole("slider", { name: "Seek audio" }).fill("5000");
+  await page
+    .getByRole("button", { name: "Edit caption 2", exact: true })
+    .click();
+  await page
+    .getByLabel("Caption text", { exact: true })
+    .fill("[Bright bell notes ripple over a warm pulse]");
   await page.screenshot({
     path: "docs/screenshots/desktop.png",
     fullPage: true,
@@ -311,6 +500,12 @@ test("desktop, mobile, 320px and 200% text remain usable; actual screenshots", a
     path: "docs/screenshots/mobile.png",
     fullPage: true,
   });
+  await page
+    .getByRole("button", { name: "Edit caption 2", exact: true })
+    .click();
+  await page
+    .getByRole("region", { name: "Caption editor", exact: true })
+    .screenshot({ path: "docs/screenshots/inspector-mobile.png" });
   for (const width of [320, 390]) {
     await page.setViewportSize({ width, height: 844 });
     expect(
@@ -339,7 +534,7 @@ test("desktop, mobile, 320px and 200% text remain usable; actual screenshots", a
     .getByRole("button", { name: "Edit caption 2", exact: true })
     .click();
   await expect(page.getByLabel("Caption text", { exact: true })).toHaveValue(
-    "[A bright, repeating arpeggio]",
+    "[Bright bell notes ripple over a warm pulse]",
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(

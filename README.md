@@ -6,7 +6,7 @@ Cuecraft is a polished, local audio-caption editor: listen to an original compos
 
 ![Cuecraft desktop studio](docs/screenshots/desktop.png)
 
-[View the mobile studio](docs/screenshots/mobile.png) · [Behavior specification](SPEC.md) · [Architecture walkthrough](docs/ARCHITECTURE.md) · [Engineering decisions](docs/DECISIONS.md)
+[View the mobile studio](docs/screenshots/mobile.png) · [Mobile inspector](docs/screenshots/inspector-mobile.png) · [Behavior specification](SPEC.md) · [Architecture walkthrough](docs/ARCHITECTURE.md) · [Engineering decisions](docs/DECISIONS.md)
 
 **[Open the live demo](https://nen-io.github.io/cuecraft/)** · [CI checks](https://github.com/nen-io/cuecraft/actions)
 
@@ -35,19 +35,21 @@ npm run format:check  # Verify formatting without writes
 ## A short listening session
 
 1. Press Play and listen to **Small hours**, an original 24-second synthetic tone composition. These are descriptive sound captions, not a speech transcription.
-2. Click a caption in the track or timeline. Change its text and `HH:MM:SS.mmm` boundaries; save. Overlapping or invalid captions are rejected without changing the committed track.
-3. Try Undo and Redo. Playback and selection do not consume history; edits, imports, deletion and reset do.
-4. Export VTT. Import that file to round-trip captions, including Unicode and literal `<`, `>` and `&` characters.
+2. Click a caption in the track or timeline. On a phone, its inspector comes into view. Change its text and `HH:MM:SS.mmm` boundaries, or use **Set start/end to playhead** after seeking the audio.
+3. Browse another caption and return: unfinished drafts stay with their cues. **Save caption** validates and commits; **Discard draft** restores the saved fields. Overlaps and invalid timing never change the saved track.
+4. Save or discard drafts before Undo, Redo, reset or import. Export VTT includes saved captions only; import that file to round-trip Unicode and literal `<`, `>` and `&` characters. Playback and selection do not consume undo history.
 5. Optionally enable **Remember edits on this device**. Turn it off to remove the saved copy, or export for portable backup.
 
 ## What is implemented
 
 - Actual audio transport, click/keyboard seeking, active captions and a decoded waveform.
 - Validated millisecond timing, a first-gap caption insertion rule and bounded immutable history.
+- Per-cue session drafts, explicit dirty/save/discard controls, and direct playhead timing entry.
 - Strict WebVTT subset import, UTF-8 export, HTML-safe React text rendering and atomic file replacement.
 - Stale import fencing so a slow file read cannot overwrite newer edits.
 - Asset/version-bound optional storage, graceful storage failures, and media retry that preserves session edits.
 - Responsive desktop/phone layout, visible keyboard focus and reduced-motion support.
+- Mobile inspector navigation and a return path to the caption track.
 - Production content security policy, bounded inputs and no analytics or third-party uploads.
 
 ## Intentional limits
