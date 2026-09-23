@@ -61,3 +61,7 @@ The new browser seam first failed because the offset controls did not exist; aft
 The running suite refreshed desktop/mobile captures and produced [the timing offset form](screenshots/timing-offset.png) from a two-caption import shifted by +500 ms. The image was visually inspected. Existing real-media, failed-load/retry, native VTT parser, 320px and doubled-text regressions still pass. These are local checks; current external CI, production-subpath accessibility and published asset checks remain separate release-owner evidence. No new claims about Safari, physical audio output, penetration testing or production scale are made.
 
 The implementation checked the current official [React state model](https://react.dev/learn/choosing-the-state-structure), [Playwright assertions](https://playwright.dev/docs/test-assertions) and [WebVTT specification](https://www.w3.org/TR/webvtt1/). No dependency versions or codec policy changed.
+
+## Accessibility iteration
+
+The new save-focus and deletion-recovery browser seams were reproduced before changes. `npm run check` passes 57 unit cases, TypeScript and the build; the full Chromium suite passes 22 journeys. Three added journeys cover caption save/error/delete recovery, Tab/Enter-only editing and export, and 320px doubled-text forced-colors/reduced-motion operation. See [the accessibility review](ACCESSIBILITY.md) for scope and limitations.

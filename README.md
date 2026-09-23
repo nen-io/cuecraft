@@ -73,3 +73,7 @@ The audio, captions and interface are original to this example. The audio-genera
 - [Architecture and source map](docs/ARCHITECTURE.md)
 
 MIT licensed. This repository is an educational portfolio demonstration; deployment and browser/device verification evidence are recorded separately from local checks.
+
+## Accessibility review
+
+[Keyboard tasks, focus recovery, visual checks and honest testing limits](docs/ACCESSIBILITY.md). The studio provides skip/inspector links, readable help and native keyboard controls. Automated Chromium evidence does not claim testing with physical screen readers or devices.

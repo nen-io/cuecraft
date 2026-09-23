@@ -1,5 +1,5 @@
 import { Check, Trash2 } from "lucide-react";
-import { useState, type Ref } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { formatTimestamp, parseTimestamp, type Cue } from "../domain/captions";
 import type { CueDraft } from "../domain/drafts";
 interface Props {
@@ -34,8 +34,26 @@ export function CueEditor({
 }: Props) {
   const { text, start, end } = draft;
   const [error, setError] = useState("");
+  const [invalid, setInvalid] = useState<
+    "text" | "start" | "end" | "timing" | null
+  >(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
+  const textField = useRef<HTMLTextAreaElement>(null);
+  const startField = useRef<HTMLInputElement>(null);
+  const endField = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    const field =
+      invalid === "text"
+        ? textField
+        : invalid === "end"
+          ? endField
+          : startField;
+    field.current?.focus();
+  }, [error, invalid, validationAttempt]);
   function change(next: CueDraft) {
     setError("");
+    setInvalid(null);
     onChange(next);
   }
   return (
@@ -44,7 +62,7 @@ export function CueEditor({
         <span className="eyebrow">CAPTION INSPECTOR</span>
         <span className="index-pill">{String(index + 1).padStart(2, "0")}</span>
       </div>
-      <h2 ref={headingRef} tabIndex={-1}>
+      <h2 id="caption-editor-heading" ref={headingRef} tabIndex={-1}>
         Make every moment clear.
       </h2>
       <p className="muted editor-intro">
@@ -56,15 +74,25 @@ export function CueEditor({
       <form
         onSubmit={(event) => {
           event.preventDefault();
+          let field: "text" | "start" | "end" | "timing" = "text";
           try {
+            if (!text.trim() || text.includes("\0"))
+              throw new Error("Enter caption text without null characters.");
+            field = "start";
+            const startMs = parseTimestamp(start);
+            field = "end";
+            const endMs = parseTimestamp(end);
+            field = "timing";
             onSave({
               ...cue,
-              startMs: parseTimestamp(start),
-              endMs: parseTimestamp(end),
+              startMs,
+              endMs,
               text,
             });
             setError("");
           } catch (cause) {
+            setInvalid(field);
+            setValidationAttempt((attempt) => attempt + 1);
             setError(
               cause instanceof Error
                 ? cause.message
@@ -79,11 +107,15 @@ export function CueEditor({
         </div>
         <textarea
           id="caption-text"
+          ref={textField}
+          aria-invalid={invalid === "text"}
           value={text}
           onChange={(event) => change({ ...draft, text: event.target.value })}
           maxLength={500}
           rows={4}
-          aria-describedby={error ? "editor-error" : "caption-hint"}
+          aria-describedby={
+            invalid === "text" ? "caption-hint editor-error" : "caption-hint"
+          }
         />
         <p className="field-hint" id="caption-hint">
           Sound descriptions belong in [square brackets].
@@ -93,13 +125,19 @@ export function CueEditor({
             <label htmlFor="start-time">Start time</label>
             <input
               id="start-time"
+              ref={startField}
+              aria-invalid={invalid === "start" || invalid === "timing"}
               value={start}
               onChange={(event) =>
                 change({ ...draft, start: event.target.value })
               }
               maxLength={12}
               spellCheck={false}
-              aria-describedby="time-hint"
+              aria-describedby={
+                invalid === "start" || invalid === "timing"
+                  ? "time-hint editor-error"
+                  : "time-hint"
+              }
             />
             <button
               className="use-playhead"
@@ -116,13 +154,19 @@ export function CueEditor({
             <label htmlFor="end-time">End time</label>
             <input
               id="end-time"
+              ref={endField}
+              aria-invalid={invalid === "end" || invalid === "timing"}
               value={end}
               onChange={(event) =>
                 change({ ...draft, end: event.target.value })
               }
               maxLength={12}
               spellCheck={false}
-              aria-describedby="time-hint"
+              aria-describedby={
+                invalid === "end" || invalid === "timing"
+                  ? "time-hint editor-error"
+                  : "time-hint"
+              }
             />
             <button
               className="use-playhead"
@@ -137,8 +181,8 @@ export function CueEditor({
           </div>
         </div>
         <p className="field-hint" id="time-hint">
-          Playhead {formatTimestamp(timeMs)} · Save to apply timing. Captions
-          cannot overlap.
+          Use HH:MM:SS.mmm. Playhead {formatTimestamp(timeMs)} · Save to apply
+          timing. Captions cannot overlap.
         </p>
         {error && (
           <p className="inline-error" id="editor-error" role="alert">
@@ -155,6 +199,7 @@ export function CueEditor({
             disabled={!dirty}
             onClick={() => {
               setError("");
+              setInvalid(null);
               onDiscard();
             }}
           >

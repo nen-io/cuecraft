@@ -47,3 +47,7 @@ Implement the behavior and acceptance tests above; document any deliberate limit
 - Selected-caption limits come from its adjacent saved captions and audio bounds; whole-track limits come from the first start and last end. Preserve IDs, text, durations and gaps, and reject a move atomically rather than clipping. Empty tracks and zero/invalid/out-of-range offsets cannot create history.
 - Save or discard every unsaved caption draft before a timing move. One accepted move is one history entry and follows the existing opt-in persistence and import-revision rules. The media clock is unchanged.
 - Browser acceptance: default first caption +250ms, undo/redo, whole-track import +500ms and exact VTT export, invalid offsets leave state untouched, draft protection, keyboard operation, narrow layout, reviewer destinations.
+
+## Accessibility refinement
+
+Saving a caption preserves the Save button focus; deleting moves focus to the next inspector heading, or the caption track when empty, with Undo explicitly available. Invalid timestamp syntax focuses and marks the relevant field and associates its message; document-level timing validation marks timing inputs without losing drafts. A skip link reaches the workspace and an explicit inspector jump avoids crossing every caption row. Keyboard, 320px reflow, doubled text, reduced motion and forced-colors tasks are verified without claiming screen-reader/device testing.

@@ -41,13 +41,14 @@ export function CaptionList({
               key={cue.id}
               className={`cue-row ${selectedId === cue.id ? "selected" : ""}`}
               aria-label={`Edit caption ${index + 1}`}
+              aria-describedby={`cue-description-${cue.id}`}
               aria-pressed={selectedId === cue.id}
               onClick={() => onSelect(cue.id)}
             >
               <span className="cue-number">
                 {String(index + 1).padStart(2, "0")}
               </span>
-              <span className="cue-copy">
+              <span className="cue-copy" id={`cue-description-${cue.id}`}>
                 <span className="cue-time">
                   {formatTimestamp(cue.startMs).slice(3)} <span>—</span>{" "}
                   {formatTimestamp(cue.endMs).slice(3)}

@@ -72,6 +72,14 @@ function Studio({
   const [drafts, setDrafts] = useState<Map<string, CueDraft>>(() => new Map());
   const [inspectRequest, setInspectRequest] = useState(0);
   const editorHeading = useRef<HTMLHeadingElement>(null);
+  const [deleteRequest, setDeleteRequest] = useState(0);
+  useEffect(() => {
+    if (!deleteRequest) return;
+    const target =
+      editorHeading.current ??
+      window.document.getElementById("caption-track-heading");
+    target?.focus();
+  }, [deleteRequest]);
   const fileRef = useRef<HTMLInputElement>(null);
   const revision = useRef(0);
   const importRequest = useRef(0);
@@ -207,8 +215,7 @@ function Studio({
             ref={fileRef}
             type="file"
             accept=".vtt,text/vtt"
-            className="visually-hidden"
-            tabIndex={-1}
+            hidden
             aria-label="Import WebVTT file"
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -228,6 +235,27 @@ function Studio({
             <ArrowDownToLine size={16} /> Export VTT
           </button>
         </div>
+      </div>
+      <div className="workspace-help">
+        <p>
+          Listen, choose a caption, then edit and Save. Undo restores saved
+          changes.
+        </p>
+        <a
+          href={selected ? "#caption-editor-heading" : "#caption-track-heading"}
+        >
+          {selected ? "Jump to caption editor" : "Jump to caption track"}
+        </a>
+        <details>
+          <summary>Keyboard and timing help</summary>
+          <p>
+            Tab moves between controls. Enter activates buttons. Arrow keys seek
+            when the waveform is focused; Space plays or pauses when focus is
+            outside a control. Time fields use
+            hours:minutes:seconds.milliseconds. Export includes saved captions
+            only.
+          </p>
+        </details>
       </div>
       <Transport
         media={media}
@@ -302,7 +330,7 @@ function Studio({
         />
         {selected ? (
           <CueEditor
-            key={`${selected.id}:${selected.startMs}:${selected.endMs}:${selected.text}`}
+            key={selected.id}
             cue={selected}
             index={document.cues.indexOf(selected)}
             onSave={(cue) => {
@@ -350,6 +378,7 @@ function Studio({
                 cues: document.cues.filter((cue) => cue.id !== id),
               });
               setNotice("Caption deleted. Undo can bring it back.");
+              setDeleteRequest((value) => value + 1);
             }}
           />
         ) : (
@@ -419,7 +448,7 @@ export default function App() {
         event.ctrlKey ||
         event.metaKey ||
         target?.closest(
-          'input, textarea, select, button, a, [contenteditable="true"]',
+          'input, textarea, select, button, a, summary, [contenteditable="true"]',
         )
       )
         return;
@@ -431,6 +460,9 @@ export default function App() {
   }, [media.toggle]);
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#workspace">
+        Skip to workspace
+      </a>
       <audio ref={media.audioRef} src={AUDIO_URL} preload="auto" />
       <header className="site-header">
         <a href="./" className="brand" aria-label="Cuecraft home">
@@ -442,7 +474,7 @@ export default function App() {
         <span className="header-note">THE SOUND IS ONLY HALF THE STORY.</span>
         <span className="edition">STUDIO / 001</span>
       </header>
-      <main>
+      <main id="workspace" tabIndex={-1}>
         <section className="project-heading">
           <div>
             <div className="eyebrow">AUDIO CAPTION STUDIO</div>

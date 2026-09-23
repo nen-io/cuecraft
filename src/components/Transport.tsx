@@ -82,6 +82,7 @@ export function Transport({ media, document, selectedId, onSelect }: Props) {
                 selectedId === cue.id ? "timeline-cue selected" : "timeline-cue"
               }
               aria-label={`Select caption ${index + 1} on timeline`}
+              aria-describedby={`cue-description-${cue.id}`}
               aria-pressed={selectedId === cue.id}
               style={{
                 left: `${(cue.startMs / document.durationMs) * 100}%`,
