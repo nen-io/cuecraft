@@ -10,6 +10,10 @@ Cuecraft is a polished, local audio-caption editor: listen to an original compos
 
 **[Open the live demo](https://nen-io.github.io/cuecraft/)** · [CI checks](https://github.com/nen-io/cuecraft/actions)
 
+**[Three-minute engineering review](docs/REVIEWER_GUIDE.md)** — a short route from the live editor to its behavior, code and tests.
+
+This is a recent AI-assisted portfolio demonstration with executable verification; it is not a claim of production deployment or unaided authorship.
+
 ## Try it locally
 
 Node 24 and npm are required. No account, API key, backend, or external media service is needed.
@@ -38,12 +42,14 @@ npm run format:check  # Verify formatting without writes
 2. Click a caption in the track or timeline. On a phone, its inspector comes into view. Change its text and `HH:MM:SS.mmm` boundaries, or use **Set start/end to playhead** after seeking the audio.
 3. Browse another caption and return: unfinished drafts stay with their cues. **Save caption** validates and commits; **Discard draft** restores the saved fields. Overlaps and invalid timing never change the saved track.
 4. Save or discard drafts before Undo, Redo, reset or import. Export VTT includes saved captions only; import that file to round-trip Unicode and literal `<`, `>` and `&` characters. Playback and selection do not consume undo history.
-5. Optionally enable **Remember edits on this device**. Turn it off to remove the saved copy, or export for portable backup.
+5. Use **Shift saved timings** to move the selected caption by +250 ms; Undo restores both boundaries together. For an imported track, choose **Whole track** to correct a shared offset within the displayed range.
+6. Optionally enable **Remember edits on this device**. Turn it off to remove the saved copy, or export for portable backup.
 
 ## What is implemented
 
 - Actual audio transport, click/keyboard seeking, active captions and a decoded waveform.
 - Validated millisecond timing, a first-gap caption insertion rule and bounded immutable history.
+- Atomic selected-caption or whole-track timing offsets with legal-range preview and one-step undo.
 - Per-cue session drafts, explicit dirty/save/discard controls, and direct playhead timing entry.
 - Strict WebVTT subset import, UTF-8 export, HTML-safe React text rendering and atomic file replacement.
 - Stale import fencing so a slow file read cannot overwrite newer edits.

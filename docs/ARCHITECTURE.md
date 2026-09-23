@@ -70,3 +70,7 @@ Consulted 17 September 2026; installed versions are pinned in `package.json` and
 - [Vite static deployment](https://vite.dev/guide/static-deploy): relative asset base for repository subpaths.
 
 Refinement references rechecked on 17 September 2026: [React state preservation](https://react.dev/learn/preserving-and-resetting-state), [native currentTime](https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/currentTime), and [Playwright retrying assertions](https://playwright.dev/docs/test-assertions). No dependency versions changed.
+
+## Atomic timing corrections
+
+`domain/offset.ts` derives the legal signed millisecond range from saved neighbors (selected scope) or the track edges (whole-track scope). `TimingOffset` stores only form input and scope; affected counts and bounds are derived from the current validated document. Apply revalidates the source, maps the selected IDs immutably, validates the complete result and enters the existing commit path once. That path owns history, persistence and pending-import revision fencing. A failed move cannot partially alter cues or consume history. The audio clock does not move.

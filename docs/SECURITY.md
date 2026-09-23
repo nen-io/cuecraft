@@ -29,3 +29,7 @@ Local saved edits are unencrypted and last-writer-wins across tabs. Anyone with 
 For a suspected vulnerability, use the repository's private vulnerability reporting feature if enabled. Otherwise open a minimal issue asking for a private reporting channel, without posting sensitive documents, secrets or a weaponized exploit. No maintainer email address is invented here. Security controls described above are implemented boundaries, not a claim of comprehensive production hardening.
 
 Session drafts are bounded plain strings in a Map keyed by existing validated cue IDs. They never render as HTML and never enter exported or persisted data before full document validation. Imports and document-wide replacement are blocked while drafts exist; exported saved-only state is labelled explicitly. Playhead timing changes remain uncommitted until normal validation.
+
+## Timing correction boundary
+
+The new offset accepts a bounded signed decimal integer only. The domain rejects nonfinite, fractional, unsafe, zero and out-of-range values, validates the source and resulting full document, and does not execute imported text. Draft protection and the existing revision fence prevent bulk edits from being overwritten by an older file read. Source/reviewer links are fixed GitHub URLs with no tracking and no content interpolation.

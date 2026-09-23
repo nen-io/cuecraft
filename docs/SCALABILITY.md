@@ -34,3 +34,7 @@ For long recordings and 10,000+ cues, use segmented media, chunked waveform summ
 Collaborative editing changes the consistency model: replace last-writer-wins localStorage with a server revision/CAS protocol or a carefully designed CRDT. Persist cue identities and separate draft edits from committed revisions. Offline edits need conflict handling, not silent last-write overwrite. Caching media must include version/digest and privacy scope; invalidation follows asset replacement and deletion. These are staged redesigns triggered by measured needs, not claims about the current static demo.
 
 Draft Map updates clone at most 100 entries and compare three bounded fields. No draft snapshots enter the 40-state history, and browsing/playback creates no additional draft entries.
+
+## Timing corrections
+
+Offset preview scans at most 100 cues. Applying a correction validates and sorts the complete bounded document and creates one history entry, regardless of affected cue count. It adds no per-keystroke document snapshot, timer, network request or persistent collection. Larger media or collaborative timing transforms would need a separate design; they are not claimed here.

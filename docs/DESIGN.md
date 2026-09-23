@@ -17,3 +17,7 @@ Internal review criteria: clear visual hierarchy, useful density, no horizontal 
 The inspector keeps a bounded draft for each existing cue, so browsing the track does not erase unfinished writing. Draft labels in the track and a clear summary separate saved captions from unsaved work. Save commits only the selected cue; Discard restores its saved fields. Import, undo, redo and sample reset wait until drafts are saved or discarded, while export explicitly contains saved captions only. Typing also invalidates an already pending import.
 
 Start/end controls offer “Set to playhead” using the actual audio clock, without saving implicitly. On a stacked phone layout, choosing a caption moves keyboard focus and the viewport to its inspector; “Back to captions” returns to the track. Desktop selection retains its side-by-side context. New controls use the existing warm palette and compact field styling.
+
+## Timing correction form
+
+A compact panel after the caption workspace groups scope, signed millisecond offset and Apply. The selected caption is the default so the supplied full-length sample supports an immediate useful correction. The whole-track option displays its boundary-limited range and explains when no movement is possible. Positive/later and negative/earlier are stated beside the form. Controls wrap into one column on a phone; text remains visible, without a modal or hidden gesture. Restrained footer links lead directly to Source and Engineering walkthrough.

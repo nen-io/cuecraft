@@ -31,3 +31,9 @@
 ## ADR008 — Precise timing actions and reachable mobile inspection
 
 **Context:** Typing timestamps from a distant playback readout and manually finding the inspector on a phone add avoidable friction. **Alternatives:** drag handles with new gesture semantics; automatic timing commits; or native-clock field actions plus focus navigation. **Decision:** Set start/end reads actual audio currentTime into the draft, then uses the existing Save validation. Mobile selection focuses the inspector with a return path; desktop context remains stationary. **Consequences:** invalid timing stays recoverable and no new clock or gesture engine is introduced. **Revisit:** measured demand for waveform drag editing or continuous cue audition.
+
+## Signed offsets preserve the whole interval
+
+A correction often needs both caption boundaries to move together. Separate start/end edits make that cumbersome and can accidentally change duration. The offset form supports selected or whole-track scope, with the legal range visible before Apply. It rejects collisions and audio-boundary violations instead of clipping: silent clipping would shorten durations and change the requested edit. Draft gating prevents replacing an unsaved form with new saved timings. One immutable document commit makes the bulk operation one undo step. Millisecond integers match the existing WebVTT model, avoiding locale-dependent decimal-second parsing.
+
+This follows React's [minimal derived state guidance](https://react.dev/learn/choosing-the-state-structure); current official docs were checked on 23 September 2026. No dependency update was needed.

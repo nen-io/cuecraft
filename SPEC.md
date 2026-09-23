@@ -40,3 +40,10 @@ Describe original asset generation/provenance, supported VTT subset, timing auth
 ## Completion gate
 
 Implement the behavior and acceptance tests above; document any deliberate limitation. `npm run check` and `npm run test:e2e` must pass. Independently review the code and exercise the production build before release. Verify the public demo at its GitHub repository subpath.
+
+## Timing offset acceptance (September 2026 iteration)
+
+- A compact “Shift saved timings” form moves either the selected saved caption or the whole track by a signed integer number of milliseconds. Positive means later; negative means earlier. The form previews the affected count and legal inclusive offset range.
+- Selected-caption limits come from its adjacent saved captions and audio bounds; whole-track limits come from the first start and last end. Preserve IDs, text, durations and gaps, and reject a move atomically rather than clipping. Empty tracks and zero/invalid/out-of-range offsets cannot create history.
+- Save or discard every unsaved caption draft before a timing move. One accepted move is one history entry and follows the existing opt-in persistence and import-revision rules. The media clock is unchanged.
+- Browser acceptance: default first caption +250ms, undo/redo, whole-track import +500ms and exact VTT export, invalid offsets leave state untouched, draft protection, keyboard operation, narrow layout, reviewer destinations.

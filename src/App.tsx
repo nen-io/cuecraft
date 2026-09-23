@@ -22,6 +22,7 @@ import {
 } from "./domain/captions";
 import { createHistory, historyReducer } from "./domain/history";
 import { AUDIO_URL, useMedia, type MediaController } from "./hooks/useMedia";
+import { TimingOffset } from "./components/TimingOffset";
 import { Transport } from "./components/Transport";
 import { CueEditor } from "./components/CueEditor";
 import { CaptionList } from "./components/CaptionList";
@@ -358,6 +359,15 @@ function Studio({
           </section>
         )}
       </div>
+      <TimingOffset
+        document={document}
+        selectedId={selectedId}
+        hasDrafts={draftCount > 0}
+        onCommit={(next, message) => {
+          commit(next);
+          setNotice(message);
+        }}
+      />
       <div className="storage-bar">
         <label>
           <input
@@ -465,7 +475,12 @@ export default function App() {
       <footer>
         <span>Made for careful listening.</span>
         <span>Local audio. Real timing. Open format.</span>
-        <span>CUECRAFT / 2026</span>
+        <nav className="reviewer-links" aria-label="Project resources">
+          <a href="https://github.com/nen-io/cuecraft">Source</a>
+          <a href="https://github.com/nen-io/cuecraft/blob/main/docs/REVIEWER_GUIDE.md">
+            Engineering walkthrough
+          </a>
+        </nav>
       </footer>
     </div>
   );

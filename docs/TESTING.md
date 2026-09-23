@@ -51,3 +51,13 @@ Only local Chromium is automated. Safari, Firefox, actual phones, real screen re
 The refinement pass first reproduced two data-loss paths in failing browser tests: switching captions discarded unfinished text, and a delayed import replaced text typed before Save. Both regression tests now pass. Four new browser journeys cover draft retention, pre-commit import fencing, saved-only export/storage, playhead timing validation, protected undo/reset and phone inspector focus/return. Unit rules remained unchanged; all 47 domain cases and all 16 Chromium journeys pass, with a fresh production build.
 
 A fresh independent parent audit of the refined app reports zero axe violations and zero page errors or document overflow at 1440/720/390/320px, including interactions. This remains automated Chromium evidence, not complete accessibility certification. Publication and live subpath checks belong to the release owner.
+
+## 23 September 2026 iteration evidence
+
+`npm ci` used the existing lockfile on Node 24.19.0. `npm run check` passed strict TypeScript, **57 unit cases** across two files and the production build. The full browser suite passed **19 Chromium journeys**, including three new offset journeys. Pinned Prettier verification passed for source, tests, README, spec and docs.
+
+The new browser seam first failed because the offset controls did not exist; after implementation it proves one-step undo/redo, global unsaved-draft protection, inclusive adjacent/audio bounds, exact timestamps in an actual VTT download, a newer offset superseding an older asynchronous file read, empty-track protection, mobile keyboard form submission and exact repository/guide destinations. Unit coverage includes ten offset cases (including parameterized invalid numbers), positive/negative boundaries, preservation of source/IDs/text/duration and atomic rejection.
+
+The running suite refreshed desktop/mobile captures and produced [the timing offset form](screenshots/timing-offset.png) from a two-caption import shifted by +500 ms. The image was visually inspected. Existing real-media, failed-load/retry, native VTT parser, 320px and doubled-text regressions still pass. These are local checks; current external CI, production-subpath accessibility and published asset checks remain separate release-owner evidence. No new claims about Safari, physical audio output, penetration testing or production scale are made.
+
+The implementation checked the current official [React state model](https://react.dev/learn/choosing-the-state-structure), [Playwright assertions](https://playwright.dev/docs/test-assertions) and [WebVTT specification](https://www.w3.org/TR/webvtt1/). No dependency versions or codec policy changed.
